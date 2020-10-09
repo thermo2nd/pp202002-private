@@ -11,13 +11,13 @@ object Main {
     If you do not follow it, **your submission will not be graded.**
 
     1. Do not use keyword `var`. Use `val` and `def` instead.
-    2. Do not use any library functions or data structures like `List`, `Array` `Range` (`1 to n`, `1 until n` ...), 
-       `fold`, `map`, `reduce` or etc... You can only use tuples, `scala.annotation.tailrec`, and 
+    2. Do not use any library functions or data structures like `List`, `Array` `Range` (`1 to n`, `1 until n` ...),
+       `fold`, `map`, `reduce` or etc... You can only use tuples, `scala.annotation.tailrec`, and
        `scala.util.control.TailCalls._` from the library.
 
     Again, if you do not follow these rules, your score will be zero.
 
-    For all three problems, 50% of the test cases will require tail call optimizations (ie, have large inputs) 
+    For all three problems, 50% of the test cases will require tail call optimizations (ie, have large inputs)
     and the other 50% will not (ie, have small inputs).
 
     So, we will get 50% of the score if you submit a correct program without tail call optimization.
@@ -44,7 +44,19 @@ object Main {
          (5 -> 16 -> 8 -> 4 -> 2 -> 1)
    */
   def collatz(n: Long): (Long, Long) = {
-    ???
+    return collatzTail(n, 1, n)
+  }
+
+  private def collatzTail(n: Long, count: Long, sum: Long): (Long, Long) = {
+    if(n == 1) return (count, sum)
+
+    val nextValue = if(n%2 == 0) {
+      n / 2
+    } else {
+      3*n + 1
+    }
+
+    return collatzTail(nextValue, count+1, sum + nextValue)
   }
 
   /*
@@ -59,11 +71,26 @@ object Main {
    The difference between your result and the real integral value should be less than 0.001
 
    Hint: Double `n` until the value moves less then 0.001
-   
+
    Addition 10/04: Assume that the difference with a Riemann sum and a real integral value will always be less than 0.001 when n >= 10^7
    */
   def integral(f: Double => Double, a: Double, b: Double): Double = {
-    ???
+
+    return integralTail(f, (b-a) / 10000000.0, a, b, 0)
+  }
+
+  private def integralTail(f: Double => Double, stepSize: Double, x: Double, b: Double, value: Double): Double = {
+    if (x == b) return value
+
+    val areaSize = stepSize * f(x)
+
+    val next = if(b < x + stepSize) {
+      b
+    } else {
+      x + stepSize
+    }
+
+    return integralTail(f, stepSize, next, b, value + areaSize)
   }
 
   /*
@@ -83,7 +110,18 @@ object Main {
            To optimize tail call properly, use `tailcall`, `done`, `result` functions from scala.util.control.TailCalls._
            (See https://stackoverflow.com/questions/16539488/why-scala-doesnt-make-tail-call-optimization)
    */
- def ppa(p: (Int, Int)=>Int, a: Int, b: Int): Int = {
-   ???
- }
+  def ppa(p: (Int, Int)=>Int, a: Int, b: Int): Int = {
+    def cps(a: Int, b: Int): TailRec[Int] = {
+      if(a <= 0 || b <= 0) {
+        return done(p(a,b))
+      } else if(p(a,b) % 2 == 0) {
+        val nextCps = (x: Int, y: Int) => done(p(a, tailcall(cps(x, y)).result))
+        return nextCps(a-1, b)
+      } else {
+        val nextCps = (x: Int, y: Int) => done(p(tailcall(cps(x, y)).result, b))
+        return nextCps(a, b-1)
+      }
+    }
+    return cps(a, b).result
+  }
 }
